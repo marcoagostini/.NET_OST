@@ -1,2 +1,83 @@
 \section{Vererbung}
+\begin{itemize}
+  \itemsep -0.5em 
+  \item Nur eine Basisklasse erlaubt
+  \item Beliebig viele Interfaces erlaubt
+  \item Structs können nicht erweitert werden
+  \item Structs können nicht erben
+  \item Strucs können Interfaces implementieren
+  \item Klassen sind direkt / indirekt über System.Object abgeleitet
+  \item Strucst sind über Boxing mit System.Object kompatibel
+\end{itemize}
 
+\subsection{Typprüfungen}
+Prüft ob ein Objekt mit einem Typen kompatibel ist. Liefert trie, wenn: Typ von obj identisch wie "T" ist, Typ von obj eine Sub-Klasse von "T" ist.
+\begin{lstlisting}
+class Base { } 
+class Sub : Base { } 
+class SubSub : Sub { } 
+public static void Test() {
+	SubSub a = new SubSub();
+	if (a is SubSub) { /* ... */ } 	// True 
+	if (a is Sub) { /* ... */ } 	// True 
+	if (a is Base) { /* ... */ } 	// True 
+	a = null;
+	if (a is SubSub) { /* ... */ } 	// False / NULL	
+}
+\end{lstlisting}
+
+\subsection{Type Casts}
+Explizite Typumwandlung als Hinweis für den Compiler. Regeln: Null kann auch gecasted werden, Compilerfehler wenn Type Cast nicht zulässig ist oder wenn NULL in eine Value Type gecasted wird. Value Types können nie null sein!
+\begin{lstlisting}
+class Base { } 
+class Sub : Base { } 
+class SubSub : Sub { } 
+public static void Test() {
+	Base b = new SubSub();
+	Sub s = b as Sub; // as keyword for the compiler
+}
+\end{lstlisting}
+
+\subsection{Methoden}
+Die Subklasse kann Members der Basisklasse überschreiben: Methoden, Properties, Indexer. Schlüsselword "virtual" um Basis-Methode überschreibbar zu machen. Schlüsselwort "override" um die Basis-Methode zu überschreiben. Members sind per default NICHT virtual und override! Regeln: Signatur muss identisch sein, gleiche Rückgabewert, gleiche Sichtbarkeit. \\
+\textbf{Achtung!} \\
+Virtual kann nicht mit: static, abstract, private, override verwendet werden!
+\begin{lstlisting}
+class Base {
+	public virtual void G() { /* ... */ } } 
+class Sub : Base {
+	public override void G() { /* ... */ } } 
+class SubSub : Sub {
+	public override void G() { /* ... */ } }
+
+\end{lstlisting}
+
+\subsection{Interfaces}
+Interface ähnelt einer rein abstrakten Klasse. Regeln: Kann nicht direkt instanziiert werden, Interface kann andere Interfaces erweitern, Sichtbarkeit auf Members darf nicht angegeben, Members sind implizit «abstract virtual», Members dürfen nicht «static» sein oder ausprogrammiert werden, Name beginnt mit einem grossen «I».
+
+\begin{lstlisting}
+interface ISequence {
+	void Add(object x);              // Method
+	string Name { get; }             // Property
+	object this[int i] { get; set; } // Indexer
+	event EventHandler OnAdd;        // Event 
+}
+\end{lstlisting}
+
+\subsubsection{Interfaces Implementieren}
+Regeln: Eine Klasse kann beliebig viele Interfaces implementieren, Alle Interface-Members müssen auf der Klasse vorhanden sein, «override» ist nicht nötig ausser allfällige Basisklasse definiert gleichen Member, Kombination mit «virtual» und «abstract» ist erlaubt, Implementierte Interface-Members müssen «public» und dürfen nicht «static» sein.
+\begin{lstlisting}
+interface ISequence {
+	void Add(object x);              // Method
+	string Name { get; }             // Property
+	object this[int i] { get; set; } // Indexer
+	event EventHandler OnAdd;        // Event } 
+class List : ISequence {
+	public void Add(object x) { /* ... */ }
+	public string Name { get { /* ... */ } }
+	public object this[int i] { get { /* ... */ } set { /* ... */ } }
+	public event EventHandler OnAdd; 
+}
+\end{lstlisting}
+
+\pagebreak

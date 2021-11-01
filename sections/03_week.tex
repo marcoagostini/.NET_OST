@@ -52,6 +52,13 @@ mc.Test2();
 
 \end{lstlisting}
 
+\subsubsection{Abstrakte Klassen}
+Eine Mischung aus Klasse und Interface. Deklaration mit dem Schlüsselwort "abstract". Regeln: Kann nicht direkt instanziert werden, Kann beliebig viele Interfaces implementieren, Alle Interface-Members müssen deklariert werden, Abgeleitete (nicht abstrakte) Klassen müssen alle abstrakten Members implementieren, Abstrakte Members können nur innerhalb abstrakter Klassen deklariert werden, Dürfen nicht «sealed» (versiegelt) sein (siehe später).
+
+\begin{lstlisting}
+
+\end{lstlisting}
+
 \subsection{Structs}
 Sind Value types und werden auf dem Stack oder "in-line" in einem Objekt auf dem Heap abgelegt.
 
@@ -229,6 +236,10 @@ static void Init(out int val) {
 int value;
 Init(out value);	
 \end{lstlisting}
+
+\subsection{In Parameter}
+
+
 
 \subsection{Params-Array}
 Erlaubt beliebig viele Parameter. Muss am Schluss der Deklaration stehen. Nur ein params-Array ist erlaubt. Darf nicht mit ref oder out kombiniert werden.

@@ -1,0 +1,57 @@
+\section{Delegates \& Events}
+\subsection{Delegates}
+Ein Delegat ist ein Typ, der ähnlich einem Funktionszeiger in C und C++ eine Methode sicher kapselt. Im Gegensatz zu C-Funktionszeigern sind Delegate objektorientiert, typensicher und sicher. Der Typ eines Delegaten wird durch den Namen des Delegaten definiert. Verwendung: Methoden können als Parameter übergeben werden, Definition von Callback-Methoden. Eine Zuweisung von null ist erlaubt.
+\begin{lstlisting}
+public delegate void Notifier(string sender);
+class Examples {
+	public static void Test() {
+	// Deklaration Delegate-Variable 
+	Notifier greetings; 
+	// Zuweisung einer Methode 
+	greetings = new Notifier(SayHi); 
+	// Kurzform 
+	greetings = SayHi; 
+	// Aufruf einer Delegate-Variable 
+	greetings("John");
+}
+private static void SayHi(string sender) {
+	Console.WriteLine("Hello {0}", sender);
+}
+\end{lstlisting}
+
+\subsection{Multicast Delegates}
+Jeder Delegate-Typ ist ein Multicast Delegate. Delegate-Variable kann beliebig viele Methoden-Referenzen enthalten. Zuweisungen können mit: =, +=, -= gemacht werden.
+
+\subsection{Events}
+Events sind Instanzen von Delegates, wobei das Delegate implizit private ist, damit es das Event nur von intern getriggert werden kann. (Compiler Feature) Ein Event ist normalerweise void. Events werden benötigt um zwischen Objekten zu kommunizieren. Ändert etwas in einem Objekt werden die andere benachrichtigt (Observer). Jeder Event verfügt über kompilergenerierte, öffentliche Add(+=) und Remove(-=) Methoden für das Subscriben von Methoden, Lamdas, etc.
+\begin{lstlisting}
+public delegate void AnyHandler(object sender, AnyEventArgs e);
+\end{lstlisting}
+
+\subsection{Anonyme Methoden}
+Anonyme Methoden sind immer in-place.
+\begin{lstlisting}
+class AnonymousMethods {
+	int sum = 0; 
+	void SumUp(int i) { sum += i; } 
+	void Print(int i) { Console.WriteLine(i); } 
+	void Foo() {
+		List<int> list = new List<int>(); 
+		list.ForEach(SumUp); 
+		list.ForEach(Print);
+	}	
+}
+\end{lstlisting}
+
+\pagebreak
+
+
+
+
+
+
+
+
+
+
+
