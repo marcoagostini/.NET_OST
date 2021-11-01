@@ -1,0 +1,51 @@
+%Goals
+%Sie kennen das Konzept von Klassen und Structs in C#
+%Sie kennen den Parameterübergabe-Mechanismus von C#
+%Sie knnen Properties und indexers
+%Sie kennen das Konzept des Operator-Overloadings
+%Sie könnne die gelernten Konzepte in praktischen Progammieraufgaben anwenden
+
+\section{Klassen und Structs}
+
+\subsection{Klassen}
+Sind Referenz Typen und werden auf dem Heap angelegt.
+
+\textbf{Vererbung:} Ableiten von Basisklasse möglich, Verwenden als Basisklasse möglich, Implementieren von Interfaces möglich.
+
+\begin{lstlisting}
+class Stack {
+	int[] values;
+	int top = 0;
+	public Stack(int size) { /* ... */ }
+	public void Push(int x) { /* ... */ }
+	public int Pop() { /* ... */ } }
+}
+Stack s = new Stack(10); 
+\end{lstlisting}
+
+\subsection{Structs}
+Sind Value types und werden auf dem Stack oder "in-line" in einem Objekt auf dem Heap abgelegt.
+
+\textbf{Vererbung:} Ableiten von Basisklasse nicht möglich, Verwenden als Basisklasse auch nicht möglich, Implementieren von Interfaces ist möglich.
+
+\begin{lstlisting}
+struct Point {
+int x;
+int y;
+public Point(int x, int y)
+{
+	this.x = x; this.y = y; 
+} 
+	public void MoveX(int x) { /* ... */ } 
+	public void MoveY(int y) { /* ... */ }
+}
+Point p = new Point(2, 3); 
+\end{lstlisting}
+
+\textbf{Verwendung} \\
+Ein Struct sollte nur unter folgenden Umständen verwendet werden.
+\begin{itemize}
+  \itemsep -0.5em 
+  \item Repräsentiert einen einzelnen kleinen Wert
+  \item 
+\end{itemize}
