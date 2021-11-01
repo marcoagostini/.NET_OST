@@ -1,2 +1,2 @@
 # .NET Technologies
-HS2021
+A summary of all knowledge we should aquire in this module.
