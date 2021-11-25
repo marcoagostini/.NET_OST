@@ -275,4 +275,28 @@ void Test(ref int x) { /* ... */ }
 
 %TODO add operatoren
 
+\subsection{Lamda Expressions}
+\begin{itemize}
+  \itemsep -0.5em 
+  \item Eine Lambda Expression ist eine anonyme Methode
+ 	\SubItem{Keine Implementation einer benannten Methode nötig}
+ 	\SubItem{Kein "delegate" Schlüsselwort nötig}
+ 	\SubItem{Angabe von Parametertypen ist optional}
+  \item Ist die Basis für das Erzeguen von Delegates und Expression Trees.
+  \item Zwei Ausprägungen: Expression Lambdas, Satement Lambdas.	
+  \item Werden in Delegates konvertiert
+\end{itemize}
+
+\begin{lstlisting}
+// Expression Lambda 
+Func<int, bool> fe = i => i % 2 == 0;
+// Statement Lambda 
+Func<int, bool> fs = i => {
+	int rest = i%2; 
+	bool isRestZero = rest == 0; 
+	return isRestZero;
+};
+\end{lstlisting}
+
+%TODO extend lambdas
 \pagebreak
