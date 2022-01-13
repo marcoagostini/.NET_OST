@@ -5,5 +5,126 @@
 %Sie können einfache Modelle erstellen und LINQ-Abfragen formulieren
 
 \section{Entity Framework Core}
+Unter .NET kommt ADO.NET als Entity Framework zum Einsatz. Man unterscheidet zwischen zwei Varianten wie die Entitätsklassen/Datenbanken erstellt werden können. Das Entity Framework muss mit NuGet installiert werden.
+Es werden verschiedene Provider unterstützt: MS SQL, MySQL, PostgreSQL, SQLite, SQL Compact, in-memory.
+
+\textbf{Database First} Generieren eines Modells aus einer vorhandenen Datenbank. \\
+\textbf{Code First} Manuelles Codieren eines Modells, das der Datenbank entspricht.
+
+\begin{lstlisting}
+// Models
+public class Blog
+    {
+        public int BlogId { get; set; }
+        public string Url { get; set; }
+
+        public List<Post> Posts { get; } = new();
+    }
+
+    public class Post
+    {
+        public Blog Blog { get; set; }
+    }
+}
+\end{lstlisting}
+
+\begin{lstlisting}
+// DB context
+public class DatabaseContext : DbContext
+{
+    public DbSet<Author> Authors { get; set; }
+    public DbSet<Book> Books { get; set; }
+
+	public BlogDB() : base("name=ErstesBeispiel") {
+		Database.SetInitializer<BlogDB>(new DropCreateDatabaseAlways<DbContext>());
+	}
+}	
+\end{lstlisting}
+
+\begin{lstlisting}
+// use the databse
+using (var db = new BloggingContext()) {
+	// Note: This sample requires the database to be created before running.
+    Console.WriteLine($"Database path: {db.DbPath}.");
+                
+    // Create
+    Console.WriteLine("Inserting a new blog");
+    db.Add(new Blog { Url = "http://blogs.msdn.com/adonet" });
+    db.SaveChanges();
+
+    // Read
+    Console.WriteLine("Querying for a blog");
+    var blog = db.Blogs
+    	.OrderBy(b => b.BlogId)
+        .First();
+
+     // Update
+     Console.WriteLine("Updating the blog and adding a post");
+     blog.Url = "https://devblogs.microsoft.com/dotnet";
+     blog.Posts.Add(
+     	new Post { Title = "Hello World", Content = "I wrote an app using EF Core!" });
+     db.SaveChanges();
+
+     // Delete
+     Console.WriteLine("Delete the blog");
+     db.Remove(blog);
+     db.SaveChanges();
+}
+\end{lstlisting}
+
+\subsection{Code First}
+\subsubsection{Attribute / Data Annotations}
+\begin{lstlisting}
+public class Angestellter
+	{
+            [Key, Column("PersNr")]
+            public int Id { get; set; }
+            [MaxLength(20), Required]
+            public string Name { get; set; }
+            [Column("Tel")]
+            public int? Telefonnummer { get; set; }
+            [Column("Salaer", TypeName = "DECIMAL(7,2)")]
+            public decimal Salär { get; set; }
+            [MaxLength(20)]
+            public string Wohnort { get; set; }
+            [Column(TypeName = "DATETIME")]
+            public DateTime? Eintrittsdatum { get; set; }
+            [Column("AbtNr")]
+            public int? AbteilungId { get; set; }
+            [Column(TypeName = "DECIMAL(7,2)")]
+            public decimal? Bonus { get; set; }
+            [Column("Chef")]
+            public int? ChefId { get; set; }
+
+            [ForeignKey(nameof(AbteilungId))]
+            public virtual Abteilung Abteilung { get; set; }
+
+        [ForeignKey(nameof(ChefId))]
+        public virtual Angestellter Chef { get; set; }
+
+        [InverseProperty(nameof(Chef))]
+        public virtual ICollection<Angestellter> Unterstellte { get; set; } = new List<Angestellter>();
+	} 
+\end{lstlisting}
+
+\subsection{Model Builder}
+Mit dem Model Builder kann deklarativ festgelegt werden, wie das Model generiert werden soll. Das Resultat ist das selbe wie mit der Attribut Variante.
+
+\subsection{Lazy-, Eager-Loading}
+Es wird standardmässig Lazy Loading verwendet. \\
+\textbf{Lazy Loading:} Daten werden erst geladen, wenn sie dereferenziert werden. z.B erst wenn effektiv auf die Membervariable (Liste aus mehreren Items) zugegriffen wird. Für das implizite Lazy Loading müssen die Methoden virtual definiert werden. \\
+\textbf{Eager Loading:} Das komplette Objekt wird geladen.
+
+\subsection{DB Context}
+Der DBContext ist das Herzstück des Entity Frameworks. Er ist die Verbindung zwischen unseren Entitätsklassen und der Datenbank. Der DBContext ist verantwortlich für die Datenbankinteraktionen wie das Abfragen der Datenbank und das Laden der Daten in den Speicher als Entität. Er verfolgt auch die an der Entität vorgenommenen Änderungen und speichert die Änderungen in der Datenbank.
+
+\subsection{Optimistic Concurrency}
+Annahme: Zwischen laden und speichern eines Datensatzes wird dieser nicht verändert. Zwei Möglichkeiten um die Änderungen zu detektieren: Timestamp / Row Version, Concurrency Tokens / Daten-Versionen. Diese werden im DBContext pro Entity definiert.
+
+\begin{description}
+  \item[Timestamp] Pro Record Timestamp / Row Version. Timestamp ist teil des Objektes
+  \item[Concurrency Token] Beim laden der Daten die originalwerte wegkopieren und beim überschreiben einen Vergleich machen, ob die Daten verändert wurden.
+\end{description}
+
 
 \pagebreak
