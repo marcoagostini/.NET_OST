@@ -174,7 +174,17 @@ var q = from s in Students
 Erleichtert das Zusammenfassen verschachtelter Listen.
 %TODO addd select many
 \begin{lstlisting}
-
+// Liste der Projekte mit den zugeordneten Mitarbeitern
+projList = projects
+    .SelectMany(p => p.Employees
+        .Select(e => new
+        {
+            Project = p.Name,
+            Employee = e.Name
+        })
+    )
+    .OrderBy(p => p.Project)
+    .ThenBy(p => p.Employee);
 \end{lstlisting}
 
 \pagebreak

@@ -298,5 +298,11 @@ Func<int, bool> fs = i => {
 };
 \end{lstlisting}
 
-%TODO extend lambdas
+\subsubsection{Type Inference}
+Parametertypen sind meisten redundant definiert. Somit ist die Angabe der Parameterliste obsolte.
+
+\begin{lstlisting}
+Func<int, int, int, bool> p04;
+p04 = (a, b, c) => true;
+\end{lstlisting}
 \pagebreak
