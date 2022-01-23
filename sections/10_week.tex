@@ -112,7 +112,7 @@ public class ShopContext : DbContext {
     public DbSet<Category> Categories { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
         modelBuilder.Entity<Category>()
-            .HasKey(e => e.Id)                              // Fluent API - Einzige Moeglichkeit für Composite Keys
+            .HasKey(e => e.Id)                              // Fluent API - Einzige Moeglichkeit fuer Composite Keys
             .IsRequired();
     }
 }
@@ -271,7 +271,7 @@ public class Category {
 Der DBContext ist das Herzstück des Entity Frameworks. Er ist die Verbindung zwischen unseren Entitätsklassen und der Datenbank. Der DBContext ist verantwortlich für die Datenbankinteraktionen wie das Abfragen der Datenbank und das Laden der Daten in den Speicher als Entität. Er verfolgt auch die an der Entität vorgenommenen Änderungen und speichert die Änderungen in der Datenbank. Kombinert die Patterns: Repository, Unit of Work.
 
 \begin{itemize}
-	\item \textbf{Desing Time:} Model definierern (OR-Mapping), Konfiguration, Database Migrations.
+	\item \textbf{Design Time:} Model definierern (OR-Mapping), Konfiguration, Database Migrations.
 	\item \textbf{Run-Time:} Connections verwalten, CRUD Operationen, Change Tracking, Caching, Transaction Management.
 \end{itemize}
 
@@ -285,6 +285,86 @@ Der DBContext ist das Herzstück des Entity Frameworks. Er ist die Verbindung zw
 using (ShopContext context = new ShopContext()) {
     /* Context / Database Operations */
 }
+\end{lstlisting}
+
+\subsubsection{Change Tracking}
+Registriert alle Änderungen an getrackten Entities. Aktualisiert den Entity State. Agiert ohne die Datenbank und schreibt nur die Änderungen (Keine Live Checks).
+\begin{itemize}
+	\item Add() -> Added 
+	\item Remove() -> Deleted
+	\item Update() -> Modified
+	\item Unchanged() -> Unchanged
+	\item Not tracked -> Detached
+\end{itemize}
+
+\begin{lstlisting}
+// New Record
+Category cat = new Category { Name = "Laptops" };  // EntityState.Detached
+context.Add(cat);                                  // EntityState.Added
+context.SaveChanges();                             // EntityState.Unchanged
+cat.Name = "Notebooks";                            // EntityState.Modified
+context.SaveChanges();                             // EntityState.Unchanged
+context.Remove(cat);                               // EntityState.Deleted
+context.SaveChanges();                             // EntityState.Unchanged
+\end{lstlisting}
+
+\subsubsection{Ladestrategien (Lazy, Explizit, Eager Loading)}
+Es wird standardmässig Lazy Loading verwendet. \\
+\begin{description}
+	\item[Lazy Loading] Assoziationen werden per se nicht geladen werden aber bei Zugriff auf Property automatisch nachgeladen. Collections werden komplett geladen. Passiert in separater Abfrage.
+	Daten werden erst geladen, wenn sie referenziert werden. z.B erst wenn effektiv auf die Membervariable (Liste aus mehreren Items) zugegriffen wird. Für das Lazy Loading müssen die Methoden \lstinline|virtual| definiert werden. 
+	\item[Eager Loading] Assoziationen werden per se nicht geladen. Include() Statement für einzelne Assoziationen. Passiert in der gleichen Abfrage per JOIN.
+	\item[Explicit Loading] Assoziationen werden per se nicht geladen und werden explizit nachgeladen. Collections werden komplett geladen. Passiert in separater Abfrage.
+	Even with lazy loading disabled it is still possible to lazily load related entities, but it must be done with an explicit call. To do so you use the Load method on the related entity’s entry
+\end{description}
+
+\begin{lstlisting}
+Order order = context.Orders.First();
+var customer = order.Customer; //customer is ''null''
+var items = order.Items; //items is ''null''
+\end{lstlisting}
+
+\begin{lstlisting}
+// lazy loading - zusaetzliche Ladelogik ausfuehren bei Zugriff auf Property
+//Variante 1: Manuell - Auf Auto-Properties verzichten & Logik manuell implementieren
+//Variante 2: Proxies 
+public class Order {
+    public int Id { get; set; }
+    public virtual Customer Customer { get; set; }      // virtual wichtig
+}
+public class OrderProxy : Order {
+    public virtual Customer Customer { /* ??? */ }      // virtual wichtig
+}
+Order order = context
+    .Orders
+    .First();
+\end{lstlisting}
+
+\begin{lstlisting}
+// eager loading - mit .Include wird definiert was alles zusaetzlich ins RAM geladen werden soll
+Order order = context
+    .Orders
+    .Include(o => o.Customer)                           // Eager Loading
+    .Include(o => o.Items)
+        .ThenInclude(oi => oi.Product)                  // Cascaded eager loading
+    .First();
+\end{lstlisting}
+
+\begin{lstlisting}
+// explicit loading - .Load() fuehrt dazu dass die Daten nachgeladen und in den Parent geladen werden D.h. es wird eine neue Query an die DB gemacht.
+Order order = context
+    .Orders
+    .First();
+context
+    .Entry(order)
+    .Reference(o => o.Customer)                         // Parents
+    .Load();
+context
+    .Entry(order)
+    .Collection(o => o.Items)                           // Collections
+    .Query()
+    .Where(oi => oi.QuantityOrdered > 1)
+    .Load();
 \end{lstlisting}
 
 \subsection{LINQ to Entities}
@@ -319,7 +399,7 @@ using (ShopContext context = new ShopContext()) {
     context.Add(cat);
     context.Categories.Add(cat);
     context.Entry(cat).State = EntityState.Added;
-    // Save – SQL is executed here
+    // Save  SQL is executed here
     context.SaveChanges();
     // Check Primary Key
     int id = cat.Id; // Category.Id is populated
@@ -335,7 +415,7 @@ Category cat = await context
 // Change 
 cat.Name = "Changed";
 
-// Save – SQL is executed here 
+// Save  SQL is executed here 
 await context.SaveChangesAsync();
 \end{lstlisting}
 
@@ -349,132 +429,210 @@ using (ShopContext context = new ShopContext()) {
     context.Remove(cat);
     context.Categories.Remove(cat);
     context.Entry(cat).State = EntityState.Deleted;
-    // Save – SQL is executed here
+    // Save  SQL is executed here
     context.SaveChanges();              
 }
 \end{lstlisting}
 
-\subsubsection{CUD von Assozitationen}
+\subsubsection{CUD von Assoziationen}
+Assoziationen können durch drei Operationen angepasst werden: Anpassung Navigation Properties, Hinzufügen/Entgernen von Elementen in Collection Navigation Propeties, Setzen des Foreign keys.
 
+\textbf{Durch Anpassung von Navigation Properties}\\
+\lstinline{order.Customer = customer}
 
-
-
-
-
-
+\textbf{Hinzufügen / Entfernen von Elementen in Collection Navigation Properties} \\
 \begin{lstlisting}
-// Models
-public class Blog
-    {
-        public int BlogId { get; set; }
-        public string Url { get; set; }
+customer.Orders.Add(order);
+customer.Orders.Remove(order);
+\end{lstlisting}
 
-        public List<Post> Posts { get; } = new();
-    }
+\textbf{Setzen des Foreign Keys} \\
+\lstinline{order.CustomerId = 1;} \\
+--> einzige Variante, welche keine weiteren Datenbankzugriffe benötigt
 
-    public class Post
-    {
-        public Blog Blog { get; set; }
-    }
+\textbf{Insert Object Graph} \\
+\begin{lstlisting}
+using(ShopContext context = new ShopContext()) {
+    Customer cust = new Customer {
+        Name = "Anna"
+        Orders = new List<Order> {
+            new Order { /* ... */ },
+            new Order { /* ... */ }
+        }
+    };
+    // Add to Context
+    context.Add(cust);
+    // Save - SQL is executed here
+    context.SaveChanges();
 }
 \end{lstlisting}
 
+\textbf{Insert Related Entity} \\
 \begin{lstlisting}
-// DB context
-public class DatabaseContext : DbContext
-{
-    public DbSet<Author> Authors { get; set; }
-    public DbSet<Book> Books { get; set; }
-
-	public BlogDB() : base("name=ErstesBeispiel") {
-		Database.SetInitializer<BlogDB>(new DropCreateDatabaseAlways<DbContext>());
-	}
-}	
-\end{lstlisting}
-
-\begin{lstlisting}
-// use the databse
-using (var db = new BloggingContext()) {
-	// Note: This sample requires the database to be created before running.
-    Console.WriteLine($"Database path: {db.DbPath}.");
-                
-    // Create
-    Console.WriteLine("Inserting a new blog");
-    db.Add(new Blog { Url = "http://blogs.msdn.com/adonet" });
-    db.SaveChanges();
-
-    // Read
-    Console.WriteLine("Querying for a blog");
-    var blog = db.Blogs
-    	.OrderBy(b => b.BlogId)
+using(ShopContext context = new ShopContext()) {
+    Customer cust = context
+        .Customers
+        .Include(c => c.Orders)
         .First();
-
-     // Update
-     Console.WriteLine("Updating the blog and adding a post");
-     blog.Url = "https://devblogs.microsoft.com/dotnet";
-     blog.Posts.Add(
-     	new Post { Title = "Hello World", Content = "I wrote an app using EF Core!" });
-     db.SaveChanges();
-
-     // Delete
-     Console.WriteLine("Delete the blog");
-     db.Remove(blog);
-     db.SaveChanges();
+    cust.Orders.Add(new Order());
+    
+    // Save - SQL is executed here
+    context.SaveChanges();
 }
 \end{lstlisting}
 
-\subsection{Code First}
-\subsubsection{Attribute / Data Annotations}
+\textbf{Change Relationship 1} \\
 \begin{lstlisting}
-public class Angestellter
-	{
-            [Key, Column("PersNr")]
-            public int Id { get; set; }
-            [MaxLength(20), Required]
-            public string Name { get; set; }
-            [Column("Tel")]
-            public int? Telefonnummer { get; set; }
-            [Column("Salaer", TypeName = "DECIMAL(7,2)")]
-            public decimal Salaer { get; set; }
-            [MaxLength(20)]
-            public string Wohnort { get; set; }
-            [Column(TypeName = "DATETIME")]
-            public DateTime? Eintrittsdatum { get; set; }
-            [Column("AbtNr")]
-            public int? AbteilungId { get; set; }
-            [Column(TypeName = "DECIMAL(7,2)")]
-            public decimal? Bonus { get; set; }
-            [Column("Chef")]
-            public int? ChefId { get; set; }
-
-            [ForeignKey(nameof(AbteilungId))]
-            public virtual Abteilung Abteilung { get; set; }
-
-        [ForeignKey(nameof(ChefId))]
-        public virtual Angestellter Chef { get; set; }
-
-        [InverseProperty(nameof(Chef))]
-        public virtual ICollection<Angestellter> Unterstellte { get; set; } = new List<Angestellter>();
-	} 
+using(ShopContext context = new ShopContext()) {
+    Order order = context
+        .Orders
+        .First();
+    //Change - via Nav.Property
+    order.Customer = context
+        .Customers
+        .First(c => c.Name == "Angela");
+    
+    // Save - SQL is executed here
+    context.SaveChanges();
+}
 \end{lstlisting}
 
-\subsection{Model Builder}
-Mit dem Model Builder kann deklarativ festgelegt werden, wie das Model generiert werden soll. Das Resultat ist das selbe wie mit der Attribut Variante.
-
-\subsection{Lazy-, Eager-Loading}
-Es wird standardmässig Lazy Loading verwendet. \\
-\textbf{Lazy Loading:} Daten werden erst geladen, wenn sie dereferenziert werden. z.B erst wenn effektiv auf die Membervariable (Liste aus mehreren Items) zugegriffen wird. Für das implizite Lazy Loading müssen die Methoden virtual definiert werden. \\
-\textbf{Eager Loading:} Das komplette Objekt wird geladen.
-
-
+\textbf{Change Relationship 2} \\
+\begin{lstlisting}
+using(ShopContext context = new ShopContext()) {
+    Order order = context
+        .Orders
+        .First();
+    //Change - via Foreign Key
+    order.CustomerId = 2;
+    
+    // Save - SQL is executed here
+    context.SaveChanges();
+}
+\end{lstlisting}
 
 \subsection{Optimistic Concurrency}
-Annahme: Zwischen laden und speichern eines Datensatzes wird dieser nicht verändert. Zwei Möglichkeiten um die Änderungen zu detektieren: Timestamp / Row Version, Concurrency Tokens / Daten-Versionen. Diese werden im DBContext pro Entity definiert.
+\textbf{Optimistic:} Transaktionen laufen unbehindert an. Beim Abschliessen wird in einer Validierungsphase überprüft, ob Konflikte aufgetreten sind und gegebenenfalls die Transaktion zurückgesetzt.
 
+Wenn ein Objekt im gleichen Context geladen wird, gibt der Context das gecachte Objekt zurück. Die Objekte werden anhand ihrem Entity Key gecached.
+
+\textbf{Erkennung von Konflikten:}
 \begin{description}
-  \item[Timestamp] Pro Record Timestamp / Row Version. Timestamp ist teil des Objektes
-  \item[Concurrency Token] Beim laden der Daten die originalwerte wegkopieren und beim überschreiben einen Vergleich machen, ob die Daten verändert wurden.
+  \item[Timestamp] Pro Record Timestamp / Row Version wird ein Timestamp erstellt. Beim Laden wird die Versionsnummer als Sessionzustand vermerkt. Validierung: Beim Zurückschreiben der Daten, wird die Session-Versionsnummer mit der Versionsnummer der DB verglichen.
+  \item[Concurrency Token]  Für jedes geladene Datenfeld wird der ursprünglich gelesene Wert in der Applikation gespeichert. Änderungen werden auf einer Kopie ausgeführt. Validierung: Beim Zurückschreiben wird der ursprünglich gelesene Wert mit dem aktuellen Wert in der DB verglichen.
 \end{description}
+
+\textbf{Timestamp}
+\begin{lstlisting}
+public class ShopContext : DbContext {
+    public DbSet<Category> Categories { get; set; }
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+        modelBuilder.Entity<Category>()
+            .Property(p => p.Timestamp)
+            .IsRowVersion();    // Fluent API
+    }
+}
+// --- ODER ---
+[Timestamp]                     // Data Annotations
+public byte[] Timestamp { get; set; }
+\end{lstlisting}
+
+\textbf{Concurrency Token} 
+\begin{lstlisting}
+public class ShopContext : DbContext {
+    public DbSet<Product> Products { get; set; }
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+        modelBuilder.Entity<Product>()
+            .Property(p => p.Name)
+            .IsConcurrencyToken();          // Fluent API
+        modelBuilder.Entity<Product>()
+            .Property(p => p.Price)
+            .IsConcurrencyToken();          // Fluent API
+    }
+}
+// --- ODER ---
+[ConcurrencyCheck]              // Data Annotations
+public string Name { get; set; }
+\end{lstlisting}
+
+\textbf{Konfliktbehandlung} \\
+DbUpdateConcurrencyException beinhaltet fehlerhafte ”Entries” (Aktuelle Werte, Originale Werte, Datenbank Werte).
+
+\begin{itemize}
+	\item 1. Ignorieren - Der Fehler wird ignoriert und die Daten überschrieben
+	\item 2. Benutzer Fragen - Der User entscheide, was passieren soll.
+	\item 3. Autokorrektur - das Programm kann den Error verarbeiten
+\end{itemize}
+
+\subsection{Vererbung}
+Wird aufgrund von: Speicherplatzverbrauchs, Zu vielen Tabellen, Inkonsistenzen nicht verwende. Es gibt drei verschiedene \textbf{Ansätze:} Table per Hierarchy, Table per Type, Table per Concrete Type. 
+
+\textbf{Table per Hierarchy} \\
+Eine Tabelle pro Vererbungs-Hierarchie (EF Core Standard). Nur über den DBContect definiertbar. Abgeleite Klassen als DbSet Properties definieren oder mit dem modebuilder.
+\begin{lstlisting}
+modelBuilder.Entity<Product>()
+	.HasDiscriminator<int>("ProductType") 
+	.HasValue<Product>(0) 
+	.HasValue<MobilePhone>(1) 
+	.HasValue<Tablet>(2);
+\end{lstlisting}
+
+\begin{figure}[h!]
+  \center
+  \includegraphics[width=0.75\linewidth]{tablehierarchy}
+  \caption{Table per Hierarchy}
+\end{figure}
+
+\textbf{Table per Type} \\
+Tabelle für jeden konkreten Typ mit allen benötigten Feldern. Keine Fremdschlüsselbeziehung (Parent-Child). Nachteil: Joins
+\begin{itemize}
+    \item \textbf{Tabelle "Products"}: Id, Name, Description, Price
+    \item \textbf{Tabelle "MobilePhones"}: Id, OperatingSystem, SupportsUmts
+    \item \textbf{Tabelle "Tablets"}: Id, HasKeyboard
+\end{itemize}
+
+\textbf{Table per Concrete Type} \\
+Tabelle für Parent (gemeinsame Felder) und Tabellen für Childs (eigene Felder) mit Verweis auf Parent. Nachteil: Duplicate columns
+\begin{itemize}
+    \item \textbf{Tabelle "Products"}: Id, Name, Description, Price
+    \item \textbf{Tabelle "MobilePhones"}: Id, Name, Description, Price, OperatingSystem, SupportsUmts
+    \item \textbf{Tabelle "Tablets"}: Id, Name, Description, Price, HasKeyboard
+\end{itemize}
+
+\subsection{Database Migrations}
+Während Entwicklung:
+Modell anpassen, Migration erstellen, Review der Migration, eventuelle Korrekturen anbringen
+
+Deployment:
+Änderungen gemäss Migration-Reihenfolge auf Datenbank deployen, Rollback auf älteren Stand via Down-Migration möglich
+
+\textbf{Migration erstellen}
+\lstinline{dotnet ef migrations add InitialCreate}
+-> DB wude noch nicht erstellt
+
+\textbf{Datenbank Deployment}
+\lstinline{dotnet ef database update}
+-> DB wurde erstellt
+
+\begin{lstlisting}
+using(var context = new AngProjContext()) {
+    var database = context.Database;
+    //"Dev" Ansatz (loeschen / neu erstellen)
+    database.EnsureDeleted(); //Loescht DB
+    database.EnsureCreated(); //Erstellt DB falls nicht vorhanden
+    
+    //Automatische Migration auf neuesten Stand
+    database.Migrate(); //Migration DB zur neusten Version
+    
+    //Migrations abfragen
+    IEnumerable<string> migrations;
+    migrations = database.GetMigrations(); //Abfrage von Migration-Names im DbContext
+    migrations = database.GetPendingMigrations();
+    migrations = database.GetAppliedMigrations();
+    var m = context.GetService<IMigrator>(); 
+    m.Migrate("<MigrationName>"); //Explizite Migration auf spezifische Version
+}
+\end{lstlisting}
 
 
 \pagebreak
