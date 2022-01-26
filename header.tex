@@ -30,18 +30,19 @@
 
 \lstdefinestyle{sharpc}{
 	language=csh,
-    backgroundcolor=\color{backcolour},   
+    backgroundcolor=,   
     commentstyle=\color{codegreen},
     identifierstyle=\color{black},
-    keywordstyle=\color{magenta},
+    keywordstyle=\color{blue},
     numberstyle=\tiny\color{black},
     stringstyle=\color{orange}\ttfamily,
-    basicstyle=\ttfamily,
+    basicstyle=\footnotesize\ttfamily,
     breakatwhitespace=false,         
     breaklines=true,
     morecomment=[l]{//}, %use comment-line-style!
 	morecomment=[s]{/*}{*/}, %for multiline comments                 
-    captionpos=b,                    
+    captionpos=b,
+    frame=lines,                    
     keepspaces=true,                 
     numbers=left,                    
     numbersep=2pt,                  
@@ -67,7 +68,7 @@
 	delegate, internal, short, void,
 	do, is, sizeof, while,
 	double, lock, stackalloc,
-	else, long, static,
+	else, long, static, get, set,
 	enum, namespace, string},
 }
 
